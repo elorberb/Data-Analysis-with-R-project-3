@@ -1,0 +1,376 @@
+---
+title: "Homework 3"
+author: "Almog and Tomer"
+date: "6/4/2021"
+output: html_document
+---
+
+# Homework 3
+
+### Instructions
+
+1.  All assignments are individual!
+2.  This assignment should be uploaded as two files: "rmd" and "html" (after knit) before 20/4/2021, 23:59.
+3.  There are questions for two different datasets in this assignment, if you want to pass it, you must complete all of them.
+4.  Questions about the assignment should be asked using the Assignments forums.
+5.  Because this is an advanced course, questions about compilation and installment of R and libraries will not be answered! (Look it up in Google)
+6.  All of the instructions of this assignment should be included in the final .html file.
+7.  Further instructions are available on Moodle.
+
+### Questions
+
+In this assignment we only present the raw data and the questions needed to complete this assignment. It is your job to split into sections, chunks and add proper text. In order to complete the assignment please use `ggplot2` and `dplyr`.
+
+The first data you have been given is `admissions.csv`, and it is presents descriptions of students scores and whether they were accepted into the university for master's degree.
+
+The second data you have been given is `titanic.csv` and it presents descriptions of different passengers on the titanic and whether 1.
+
+### Name: Etay Arie Lorberboym
+
+### ID: 3114977596
+
+### Installing ggplot2 and dplyr
+
+```{r - load libraies}
+library("ggplot2")
+library("dplyr")
+```
+
+### Admissions (60%)
+
+For this dataset there are three parts:
+
+Informative: Please provide additional information for the different features of the data. If you find any interesting insights, make sure to discuss them in text. For example, what is the meaning and type of each feature, average, median, std, min, max, etc. **In addition**, extract the following information that shows relationships between columns:
+
+## reading admissions data from csv
+
+```{r}
+admissions <- read.csv("C:\\Users\\itay7\\Desktop\\Data\\admission.csv")
+```
+
+### part 1 - statistics for the data
+
+we will firstly have a glimpse over the data.
+
+```{r - see data}
+glimpse(admissions)
+```
+
+we can see that in some places we have NA values that can interrupt the calculations for the statistics analysis, so we will remove them when we will do the calculations.
+
+Firstly , we will create a function that will do the calculations for the data, then we will create a data frame that will save all the calculations.
+
+```{r - a statistics calc func}
+stats <- function(data){
+    mean_data <- mean(data, na.rm = T)
+    std_data <- sd(data ,na.rm = T)
+    med_data <- median(data, na.rm = T)
+    min_data <- min(data, na.rm = T)
+    max_data <- max(data, na.rm = T)
+    range_data <- max_data - min_data
+    data_insigts <- c(mean_data,std_data,med_data,min_data,max_data,range_data) 
+    return (data_insigts)
+}
+```
+
+Secondly, we will save the columns as variables and create a function to create a data frame to save all the data.
+
+```{r - a save variables}
+gre <- admissions$GRE.Score
+toefl <- admissions$TOEFL.Score 
+cgpa  <- admissions$CGPA 
+sop <- admissions$SOP
+```
+
+```{r - a data frame}
+GRE <- round(stats(gre),2)
+TOEFL <- round(stats(toefl),2)
+CGPA  <- round(stats(cgpa),2)
+SOP <- round(stats(sop),2)
+Estimate <- c("Mean","Std","Median","Min","Max","Range")
+
+insights <- data.frame(Estimate,TOEFL,GRE,CGPA,SOP)
+insights
+```
+
+those are the first insights over the data , we can guess how the plots will look from having a glimpse over this data frame.
+
+### presenting the types of the data
+
+we will present the types of the data to check what calculations to do for each type.
+
+```{r - a data types}
+  cat("Serial.No:",typeof(admissions$Serial.No.), "\n")
+  cat("GRE.Score :",typeof(admissions$GRE.Score ), "\n")
+  cat("TOEFL.Score:",typeof(admissions$TOEFL.Score), "\n")
+  cat("University.Rating:",typeof(admissions$University.Rating), "\n")
+  cat("SOP:",typeof(admissions$SOP), "\n")
+  cat("CGPA:",typeof(admissions$CGPA.), "\n")
+  cat("Research :",typeof(admissions$Research ), "\n")
+  cat("Admission:",typeof(admissions$Admission), "\n")
+```
+
+we can see that CPGA is null, probably because there are some NA values that wee will need to take care of.
+
+### part 2 - questions about the data
+
+1.  What is the mean `CGPA` for students with or without research?
+
+    ### [answer 1:]{.ul}
+
+    we will group by research to show comparison between research students and non research students, and then we will summarize by the mean the CPGA.
+
+    ```{r - a answer 1}
+    ans1 <- admissions %>%
+      group_by(Research) %>%
+      summarise("Mean CGPA" = mean(CGPA,na.rm = TRUE))
+    ans1$Research <- case_when(
+       ans1$Research == 0 ~ "Without research",
+      ans1$Research == 1 ~ "With research"
+    )
+    ans1 <- head(ans1,-1)
+    ans1
+    ```
+
+We can see that Research students tent to have higher CGPA grades.
+
+1.  What is the mean `TOFEL Score` for each university rating?
+
+    ### [answer 2:]{.ul}
+
+    we will group by the university rating and for each rating we will show to TOEFL score by using summarize function.
+
+    ```{r - a answer 2}
+    ans2 <-admissions %>%
+      group_by(University.Rating) %>%
+      summarise(mean_toefl_score = mean(TOEFL.Score,na.rm = T)) %>%
+      rename("Mean TOEFL" =mean_toefl_score,
+             "University Rating"=University.Rating
+             )
+    ans2
+    ```
+
+We can see that higher university ratings have higher TOEFL score which means that it probably harder to get into them.
+
+1.  Add two more interesting insights that shows relationships between two columns.
+
+    ### [answer 3:]{.ul}
+
+    #### insight 1 - mean TOEFL , mean CGPA and mean GRE for students that were accepted and not accepted.
+
+    ```{r - answer 3 a}
+    ans3a <- admissions %>%
+      group_by(Admission) %>%
+      summarise("Mean TOEFL" = mean(TOEFL.Score, na.rm = T),"Mean CGPA" = mean(CGPA,na.rm = T), "Mean GRE" = mean(GRE.Score, na.rm = T))
+    ans3a$Admission <- case_when(
+       ans3a$Admission == 0 ~ "Not accepted",
+      ans3a$Admission == 1 ~ "Accepted"
+    )
+    ans3a
+    ```
+
+    We can see that people that were accepted tent to have higher scores in all of the tests.
+
+    #### insight 2 - mean TOEFL , mean CGPA and mean GRE for SOP grade.
+
+    ```{r - answer 3 b}
+    ans3b <- admissions %>%
+      group_by(SOP) %>%
+      summarise("Mean TOEFL" = mean(TOEFL.Score, na.rm = T),"Mean CGPA" = mean(CGPA,na.rm = T), "Mean GRE" = mean(GRE.Score, na.rm = T))
+    ans3b
+    ```
+
+We can see that while the SOP goes up most of the tests grades goes up as well, also we can see that in some SOP grade the means are similar or almost similar, like in mean TOEFL for SOP 1 and 1.5.
+
+1.  Processing: Complete the features that contains null values. For the feature `GRE Score` replace null values with the median value. For `Research` replace null with most common value and for `CGPA` replace null with the average value.
+
+    ### [answer 4:]{.ul}
+
+    Firstly we will calculate the median of GRE score , CPGA mean and most common for Research
+
+    ```{r - a swtich NA}
+    med_GRE <- median(admissions$GRE.Score,na.rm = TRUE)
+    mean_CPGA <- mean(admissions$CGPA,na.rm = TRUE)
+    most_common <- admissions %>%
+        count(Research, sort = TRUE) %>%
+        slice_head()
+    most_common <- most_common$Research
+    ```
+
+```{r}
+library(tidyr)
+admissions <- admissions %>%
+  replace_na(list(GRE.Score = med_GRE,CPGA = mean_CPGA,Research = most_common ))
+```
+
+```{r}
+sum(is.na(admissions$CPGA))
+```
+
+```{r}
+sum(is.na(admissions$GRE.Score))
+```
+
+```{r}
+sum(is.na(admissions$Research))
+```
+
+We can see that there are not NA values in the columns Research , GRE score and CPGA.
+
+### part 3 - plots
+
+1.  visualization: Create 5 different plots:
+
+Histogram where X-axis is `GRE Score`, which represents the difference for `Admission`.
+
+```{r - a plot 1}
+ggplot(admissions,aes(x = GRE.Score, fill = as.character(Admission))) +
+  geom_histogram( color="#e9ecef", position = 'dodge', bins = 12) +
+  labs(x = "GRE score" , y = "Count", fill = "Admission", title = "Histogram of GRE score of admission students") +
+  scale_fill_manual(values=c("tomato","springgreen3"),name = "Admission", labels=c("Not Accepted","Accepted")) 
+  
+```
+
+Similar histogram with `CPGA`.
+
+```{r - a plot 2}
+ggplot(admissions,aes(x = CGPA, fill = as.character(Admission))) +
+  geom_histogram( color="#e9ecef", position = 'dodge', bins = 12) +
+  labs(x = "CGPA score" , y = "Count", fill = "Admission", title = "Histogram of CGPA score of admission students") +
+  scale_fill_manual(values=c("tomato","springgreen3"),name = "Admission", labels=c("Not Accepted","Accepted")) 
+  
+```
+
+Bar plot where X-axis is `University Rating`, Y-axis is the number of applicants and hue is `Admission`.
+
+```{r - a plot 3}
+ggplot(admissions,aes(x = University.Rating,fill = as.character(Admission))) +
+  geom_bar(position = "dodge")+
+    labs(x = "University Rating" , y = "Number of applicants", fill = "Admission", title = "Bar plot of University Rating", subtitle = "And the number of applications for each rating") +
+  scale_fill_manual(values=c("tomato","springgreen3"),name = "Admission", labels=c("Not Accepted","Accepted")) 
+  
+```
+
+Bar plot where X-axis is `University Rating`, Y-axis is the average `CGPA` and hue is `Admission`.
+
+```{r - a plot 4}
+ggplot(admissions,aes(x = University.Rating,y = CGPA ,fill = as.character(Admission))) + geom_bar(position = "dodge", stat = "summary") +
+  labs(x = "University Rating" , y = "Average CGPA", fill = "Admission", title = "Bar plot of University Rating", subtitle = "And the average CGPA score") +
+  scale_fill_manual(values=c("tomato","springgreen3"),name = "Admission", labels=c("Not Accepted","Accepted")) 
+  
+  
+```
+
+Scatter plot where X-axis is `GRE Score` and Y-axis is `Tofel Score`. Color the points by `Admission`.
+
+```{r - a plot 5}
+ggplot(admissions, aes(x = GRE.Score, y =TOEFL.Score,shape =as.character(Admission),color =as.character(Admission))) + geom_point() +
+   labs(x = "GRE score" , y = "TOEFL score", color = "Admission",shape = "Admission", title = "Scatter plot of GRE and TOEFL scores") +
+  scale_shape(name = "Admission",labels=c("Not Accepted","Accepted")) +
+    scale_color_manual(values=c("tomato","springgreen3"),name = "Admission", labels=c("Not Accepted","Accepted")) 
+```
+
+### Titanic (40%)
+
+For this dataset, you need to complete the same parts as you did for the `Admissions` dataset. However, in this part of the assignment the questions are not given. Therefore, you need to choose how to complete the features with null values, and decide which plots you present.
+
+In part 1, choose **three** ways to present relationships between columns. In part 2 please choose only **three** informative plots and explain why you chose them.
+
+## reading Titanic data from csv
+
+Firstly , we will read the csv.
+
+```{r - b read csv}
+titanic <-  read.csv("C:\\Users\\itay7\\Desktop\\Data\\titanic.csv")
+```
+
+Lets have a glimpse over the data
+
+```{r - b see data}
+glimpse(titanic)
+```
+
+I will save a new data frame after removing all the NA values for easier calculations
+
+```{r - b remove NA}
+titanic_na <- na.omit(titanic)
+```
+
+#### insight 1 - surviving average age of males and females
+
+```{r - b insight 1}
+ins1 <- titanic_na %>%
+  group_by(Sex,Survived) %>%
+  summarise("Avergae age" = mean(Age))
+ins1
+```
+
+It can be seen that younger females did not survive unlike younger males who did survive.
+
+#### insight 2 - Average fare price for different embarking locations.
+
+```{r - b insight 2}
+ins2 <- titanic_na %>%
+  group_by(Embarked) %>%
+  summarise("Avergae Fare" = mean(Fare))
+ins2 <-ins2[-1,]
+ins2
+```
+
+We can see that the mean fare price of Q ans S is pretty similar, were the price for embarking at location C is much higher. we can conclude from that the Q and S are close to each other where C is not.
+
+#### insight 3 - Average fare and age for each passenger's class
+
+```{r - b insight 3}
+ins3 <- titanic_na %>%
+  group_by(Pclass, Sex) %>%
+  summarise("Avergae Fare" = mean(Fare), "Avergae age" = mean(Age))
+ins3
+```
+
+We can see that females tend to pay more for first class and their are younger than the males. in the second and third cabin the prices and age are pretty similar. At the third class the average age for male are higher than females.
+
+### Part 2 - plots
+
+I will present 3 plots that i think can add us more information.
+
+#### plot 1 - Count of people that were survived by Sex and Passenger Class:
+
+```{r -b plot 1}
+ggplot(titanic_na, aes(x = Sex,y = Survived, fill = Sex)) +
+  geom_histogram(stat = "identity") +
+  facet_wrap(~Pclass) +
+  labs(title = "Histogram plot of how many Male and Female Survived by Passenger Class", fill = "Sex",y = "Survived") +
+  scale_fill_manual(values=c("#D16103","4E84C4"),name = "Sex", labels=c("Female","Male")) 
+```
+
+We can see that in Passenger Class 1 and 2 more females survived than males and in the third cabin the number is almost the same.
+
+I chose this plot because i wanted to see the difference number of survival in the three classes between males to females.
+
+#### plot 2 - Passengers age and count of Survival:
+
+```{r - b plot 2}
+ggplot(titanic_na,aes(x = Age, fill = as.character(Survived))) +
+  geom_histogram(position  = "dodge", binwidth = 4, col="grey") +
+  labs(x = "Age", y = "Count", title = "Histogram plot of Passengers's Age and how many Survived") +
+  scale_fill_manual(values=c("#D16103","4E84C4"),name = "Survived", labels=c("Not Survived","Survived")) 
+ 
+```
+
+We can see that until the age of 20 and the numbers of people that survived and didnt is pretty much the same where the numbers of people between the ages 20 to 30 that didnt survived is higher than the people that survived.
+
+I chose this plot to see the difference of ages between people that survived and didnt.
+
+#### plot 3 - Passengers age and count of Survival:
+
+```{r - b plot 3}
+ggplot(titanic_na,aes(x = Fare, fill = as.character(Survived))) +
+  geom_histogram(position  = "dodge", binwidth = 29, col="grey") +
+  labs(x = "Fare", y = "Count", title = "Histogram plot of how many people Survived", subtitle = "By Ticket Fare") +
+  scale_fill_manual(values=c("#D16103","4E84C4"),name = "Survived", labels=c("Not Survived","Survived")) 
+```
+
+We can see that people that payed more money tent to survive more than the people that payed less.
+
+I chose this plot because i wanted to see if there is difference in the ticket price of people that were survived or not. I believed that people that payed more received better places that might be safer than the cheaper ones, and my thoughts were true.
